@@ -5,10 +5,11 @@ export interface CameraStreamResult {
 }
 
 export class CameraService {
+  private currentRawStream: MediaStream | null = null;
   private currentStream: MediaStream | null = null;
   private mediaRecorder: MediaRecorder | null = null;
   private recordedChunks: Blob[] = [];
-  private simulationInterval: number | null = null;
+  private mirrorCanvasInterval: number | null = null;
 
   async startCamera(facingMode: 'user' | 'environment' = 'user'): Promise<CameraStreamResult> {
     this.stopCamera();
@@ -19,15 +20,23 @@ export class CameraService {
         const constraints: MediaStreamConstraints = {
           video: {
             facingMode: { ideal: facingMode },
-            width: { ideal: 720 },
-            height: { ideal: 1280 }
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
           },
           audio: false
         };
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        this.currentStream = stream;
-        return { stream, isSimulated: false };
+        this.currentRawStream = stream;
+
+        // If front camera ('user'), apply mirror transformation directly to the stream
+        if (facingMode === 'user') {
+          this.currentStream = this.createMirroredStream(stream);
+        } else {
+          this.currentStream = stream;
+        }
+
+        return { stream: this.currentStream, isSimulated: false };
       } catch (err: any) {
         console.warn('Real camera unavailable, initializing camera simulator:', err.message);
         return this.createSimulatedStream();
@@ -35,6 +44,38 @@ export class CameraService {
     } else {
       return this.createSimulatedStream();
     }
+  }
+
+  // Pipes a front-facing camera stream through a canvas with scaleX(-1) mirror effect
+  // so that BOTH the live viewfinder and the recorded Blob uploaded to cloud are 100% mirrored!
+  private createMirroredStream(sourceStream: MediaStream): MediaStream {
+    const video = document.createElement('video');
+    video.srcObject = sourceStream;
+    video.muted = true;
+    video.playsInline = true;
+    video.play();
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 1280;
+    canvas.height = 720;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return sourceStream;
+
+    const renderMirrored = () => {
+      if (video.readyState >= 2) {
+        ctx.save();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Horizontal Mirror Flip (ScaleX -1)
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.restore();
+      }
+    };
+
+    this.mirrorCanvasInterval = window.setInterval(renderMirrored, 1000 / 30);
+    return canvas.captureStream(30);
   }
 
   // Creates a simulated live stream on canvas with visual head & hands moving in LSCH pattern
@@ -106,7 +147,7 @@ export class CameraService {
     };
 
     const stream = canvas.captureStream(30);
-    this.simulationInterval = window.setInterval(renderSimulation, 1000 / 30);
+    this.mirrorCanvasInterval = window.setInterval(renderSimulation, 1000 / 30);
     this.currentStream = stream;
 
     return { stream, isSimulated: true };
@@ -167,9 +208,14 @@ export class CameraService {
   }
 
   stopCamera(): void {
-    if (this.simulationInterval !== null) {
-      clearInterval(this.simulationInterval);
-      this.simulationInterval = null;
+    if (this.mirrorCanvasInterval !== null) {
+      clearInterval(this.mirrorCanvasInterval);
+      this.mirrorCanvasInterval = null;
+    }
+
+    if (this.currentRawStream) {
+      this.currentRawStream.getTracks().forEach((track) => track.stop());
+      this.currentRawStream = null;
     }
 
     if (this.currentStream) {
