@@ -7,7 +7,7 @@ import { SingleTakeReview } from '../components/camera/SingleTakeReview';
 import { ThreeTakesReview } from '../components/camera/ThreeTakesReview';
 import { UploadProgressModal } from '../components/camera/UploadProgressModal';
 import { OfflineBanner } from '../components/offline/OfflineBanner';
-import { ArrowLeft, RefreshCw, Check } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Check, Video, Info } from 'lucide-react';
 
 export const CapturePage: React.FC = () => {
   const {
@@ -120,7 +120,7 @@ export const CapturePage: React.FC = () => {
     if (currentTakeIndex < 3) {
       setCurrentTakeIndex((currentTakeIndex + 1) as 1 | 2 | 3);
     } else {
-      // Completed all 3 takes -> Go to 3-takes review screen (Section 14)
+      // Completed all 3 takes -> Go to 3-takes review screen
       setShowThreeReview(true);
     }
   };
@@ -155,10 +155,10 @@ export const CapturePage: React.FC = () => {
     );
   }
 
-  // Section 14: Three Takes Review Screen
+  // Three Takes Review Screen
   if (showThreeReview) {
     return (
-      <div className="capture-page-wrap">
+      <div className="capture-page-wrap fit-no-scroll">
         <ThreeTakesReview
           word={activeWord}
           takes={currentTakes}
@@ -182,13 +182,13 @@ export const CapturePage: React.FC = () => {
   const currentTakeInfo = currentTakes[currentTakeIndex - 1];
 
   return (
-    <div className="capture-page-wrap">
-      {/* HEADER WITH WORD & 3 TAKES INDICATOR (Section 10 & 13) */}
+    <div className="capture-page-wrap fit-no-scroll">
+      {/* TOP HEADER */}
       <header className="capture-header">
         <button
           className="btn-back-round"
           onClick={() => setScreen('home')}
-          aria-label="Volver"
+          aria-label="Volver al inicio"
         >
           <ArrowLeft size={20} />
         </button>
@@ -209,64 +209,78 @@ export const CapturePage: React.FC = () => {
         </button>
       </header>
 
-      {/* 3 TAKES PROGRESS BAR INDICATOR (Section 13) */}
-      <div className="takes-indicator-bar">
-        {[1, 2, 3].map((num) => {
-          const isDone = currentTakes[num - 1]?.videoUrl !== null;
-          const isCurrent = currentTakeIndex === num;
-          return (
-            <div
-              key={num}
-              className={`take-progress-slot ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''}`}
-            >
-              {isDone ? (
-                <Check size={14} className="check-done" />
-              ) : (
-                <span>Toma {num}</span>
-              )}
+      {/* RESPONSIVE NO-SCROLL LAYOUT (SIDE-BY-SIDE ON DESKTOP) */}
+      <div className="capture-desktop-layout">
+        {/* LEFT COLUMN: CAMERA VIEWFINDER */}
+        <div className="camera-viewport-card">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="camera-video-stream"
+          />
+
+          {/* Framing Guide */}
+          <FrameGuide isRecording={isRecording} />
+
+          {/* Countdown Overlay */}
+          <CountdownOverlay step={countdownStep} />
+
+          {/* Recording active timer badge */}
+          {isRecording && (
+            <div className="recording-timer-badge">
+              <span className="red-record-dot" />
+              <span>Grabando ({recordingSeconds.toFixed(1)}s / {RECORDING_MAX_SECONDS}s)</span>
             </div>
-          );
-        })}
-      </div>
+          )}
+        </div>
 
-      {/* CAMERA VIEWPORT WITH ERGONOMIC FRAME GUIDE (Section 10) */}
-      <div className="camera-viewport-card">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="camera-video-stream"
-        />
-
-        {/* Framing Guide for Head, Torso & Dual Hands */}
-        <FrameGuide isRecording={isRecording} />
-
-        {/* Countdown 3-2-1-¡Ahora! Overlay */}
-        <CountdownOverlay step={countdownStep} />
-
-        {/* Recording active timer bar */}
-        {isRecording && (
-          <div className="recording-timer-badge">
-            <span className="red-record-dot" />
-            <span>Grabando ({recordingSeconds.toFixed(1)}s / {RECORDING_MAX_SECONDS}s)</span>
+        {/* RIGHT COLUMN / CONTROL PANEL */}
+        <div className="capture-controls-side">
+          {/* 3 TAKES PROGRESS INDICATOR */}
+          <div className="takes-indicator-bar">
+            {[1, 2, 3].map((num) => {
+              const isDone = currentTakes[num - 1]?.videoUrl !== null;
+              const isCurrent = currentTakeIndex === num;
+              return (
+                <div
+                  key={num}
+                  className={`take-progress-slot ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''}`}
+                >
+                  {isDone ? (
+                    <Check size={14} className="check-done" />
+                  ) : (
+                    <span>Toma {num}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        )}
+
+          <div className="desktop-instructions-card glass-card">
+            <Info size={18} className="info-icon" />
+            <div className="instruct-text">
+              <strong>Instrucciones de encuadre</strong>
+              <p>Muestra claramente tu rostro y tus manos frente a la cámara. Al presionar <em>Grabar</em>, la toma durará 4.5 segundos.</p>
+            </div>
+          </div>
+
+          {/* MAIN RECORD ACTION BUTTON (ALWAYS VISIBLE IN VIEWPORT) */}
+          <div className="capture-action-container">
+            <button
+              className={`btn-action-primary main-record-cta ${isRecording ? 'btn-recording-active' : ''}`}
+              onClick={handleStartCaptureFlow}
+              disabled={isRecording || countdownStep !== null}
+            >
+              <Video size={24} />
+              <span>{isRecording ? 'Grabando seña...' : `Grabar toma ${currentTakeIndex}`}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* SECTION 11: MAIN RECORDING ACTION BUTTON */}
-      <div className="capture-bottom-action">
-        <button
-          className={`btn-action-primary main-record-cta ${isRecording ? 'btn-recording-active' : ''}`}
-          onClick={handleStartCaptureFlow}
-          disabled={isRecording || countdownStep !== null}
-        >
-          <div className="record-circle-inner" />
-          <span>{isRecording ? 'Grabando seña...' : 'Grabar'}</span>
-        </button>
-      </div>
-
-      {/* SECTION 12: SINGLE TAKE REVIEW MODAL */}
+      {/* SINGLE TAKE REVIEW MODAL */}
       {showSingleReview && currentTakeInfo.videoUrl && (
         <SingleTakeReview
           takeNumber={currentTakeIndex}
@@ -276,7 +290,7 @@ export const CapturePage: React.FC = () => {
         />
       )}
 
-      {/* SECTION 15 & 16: UPLOAD PROGRESS & OFFLINE BUFFER */}
+      {/* UPLOAD PROGRESS & OFFLINE BUFFER */}
       {isSubmitting && <UploadProgressModal progress={uploadProgress} />}
       {showOfflineModal && (
         <OfflineBanner
@@ -288,14 +302,17 @@ export const CapturePage: React.FC = () => {
       )}
 
       <style>{`
-        .capture-page-wrap {
+        /* NO-SCROLL STRICT VIEWPORT FIT */
+        .capture-page-wrap.fit-no-scroll {
+          height: 100dvh;
+          max-height: 100dvh;
+          overflow: hidden;
           display: flex;
           flex-direction: column;
-          min-height: 100dvh;
-          padding: 12px 16px calc(16px + var(--safe-bottom));
+          justify-content: space-between;
+          padding: 12px 20px calc(16px + var(--safe-bottom));
+          background: #001f2e;
           position: relative;
-          background: #020617;
-          gap: 12px;
         }
 
         .capture-header {
@@ -304,11 +321,12 @@ export const CapturePage: React.FC = () => {
           justify-content: space-between;
           padding: 4px 0;
           z-index: 20;
+          flex-shrink: 0;
         }
 
         .btn-back-round, .btn-flip-cam {
-          width: 44px;
-          height: 44px;
+          width: 42px;
+          height: 42px;
           border-radius: 50%;
           background: rgba(255, 255, 255, 0.1);
           border: 1px solid rgba(255, 255, 255, 0.15);
@@ -320,7 +338,7 @@ export const CapturePage: React.FC = () => {
           transition: background 0.2s ease;
         }
 
-        .btn-back-round:active, .btn-flip-cam:active {
+        .btn-back-round:hover, .btn-flip-cam:hover {
           background: rgba(255, 255, 255, 0.2);
         }
 
@@ -328,80 +346,63 @@ export const CapturePage: React.FC = () => {
           display: flex;
           flex-direction: column;
           align-items: center;
-          background: rgba(15, 23, 42, 0.85);
-          backdrop-filter: blur(10px);
-          padding: 6px 18px;
+          background: rgba(0, 54, 77, 0.85);
+          backdrop-filter: blur(12px);
+          padding: 6px 20px;
           border-radius: var(--radius-full);
-          border: 1px solid var(--border-glow);
-          box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+          border: 1px solid var(--border-brand);
+          box-shadow: var(--shadow-cyan);
         }
 
         .active-word-text {
           font-family: var(--font-display);
-          font-size: 1.35rem;
+          font-size: 1.3rem;
           font-weight: 900;
           color: #ffffff;
           line-height: 1.1;
-          letter-spacing: -0.01em;
         }
 
         .take-step-indicator {
           font-size: 0.72rem;
           font-weight: 700;
-          color: var(--brand-primary-light);
+          color: var(--brand-cyan);
           text-transform: uppercase;
-          letter-spacing: 0.05em;
         }
 
-        .takes-indicator-bar {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 8px;
-        }
-
-        .take-progress-slot {
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: var(--radius-sm);
-          padding: 6px;
+        /* RESPONSIVE LAYOUT GRID FOR CAMERA AND CONTROLS */
+        .capture-desktop-layout {
           display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 0.74rem;
-          font-weight: 700;
-          color: var(--text-muted);
-          transition: all 0.2s ease;
+          flex-direction: column;
+          gap: 12px;
+          flex: 1;
+          min-height: 0; /* Critical CSS for flex child sizing */
+          overflow: hidden;
         }
 
-        .take-progress-slot.current {
-          border-color: var(--brand-primary);
-          color: #ffffff;
-          background: rgba(6, 182, 212, 0.15);
-        }
-
-        .take-progress-slot.done {
-          background: rgba(16, 185, 129, 0.2);
-          border-color: var(--accent-emerald);
-          color: #34d399;
-        }
-
-        .check-done {
-          color: #34d399;
+        @media (min-width: 900px) {
+          .capture-desktop-layout {
+            display: grid;
+            grid-template-columns: 1.3fr 0.9fr;
+            gap: 24px;
+            align-items: center;
+            padding: 10px 0;
+          }
         }
 
         .camera-viewport-card {
           position: relative;
           width: 100%;
-          flex: 1;
-          min-height: 420px;
+          height: 100%;
+          max-height: calc(100vh - 160px);
           background: #000000;
           border-radius: var(--radius-xl);
           overflow: hidden;
-          border: 2px solid rgba(255, 255, 255, 0.15);
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+          border: 2px solid var(--border-brand);
+          box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
           display: flex;
           align-items: center;
           justify-content: center;
+          margin: 0 auto;
         }
 
         .camera-video-stream {
@@ -413,9 +414,9 @@ export const CapturePage: React.FC = () => {
         .recording-timer-badge {
           position: absolute;
           top: 16px;
-          background: rgba(239, 68, 68, 0.9);
+          background: rgba(239, 68, 68, 0.95);
           color: #ffffff;
-          padding: 6px 14px;
+          padding: 6px 16px;
           border-radius: var(--radius-full);
           font-family: var(--font-display);
           font-size: 0.85rem;
@@ -435,29 +436,89 @@ export const CapturePage: React.FC = () => {
           animation: pulse-ring 1s infinite;
         }
 
-        .capture-bottom-action {
-          padding-top: 6px;
-          z-index: 20;
+        .capture-controls-side {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 16px;
+          flex-shrink: 0;
+        }
+
+        .takes-indicator-bar {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+        }
+
+        .take-progress-slot {
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-md);
+          padding: 10px 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: var(--text-muted);
+          transition: all 0.2s ease;
+        }
+
+        .take-progress-slot.current {
+          border-color: var(--brand-cyan);
+          color: #ffffff;
+          background: rgba(0, 178, 227, 0.18);
+          box-shadow: 0 0 12px rgba(0, 178, 227, 0.25);
+        }
+
+        .take-progress-slot.done {
+          background: rgba(16, 185, 129, 0.2);
+          border-color: var(--accent-emerald);
+          color: #34d399;
+        }
+
+        .check-done {
+          color: #34d399;
+        }
+
+        .desktop-instructions-card {
+          padding: 16px;
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .info-icon {
+          color: var(--brand-cyan);
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .instruct-text strong {
+          display: block;
+          color: #ffffff;
+          font-size: 0.9rem;
+          margin-bottom: 2px;
+        }
+
+        .instruct-text p {
+          font-size: 0.82rem;
+          color: var(--text-secondary);
+          line-height: 1.4;
+        }
+
+        .capture-action-container {
+          width: 100%;
         }
 
         .main-record-cta {
-          min-height: 60px;
-          font-size: 1.25rem;
-          background: var(--brand-gradient-warm);
-          box-shadow: var(--shadow-gold);
+          min-height: 56px;
+          font-size: 1.1rem;
         }
 
         .btn-recording-active {
           background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
           box-shadow: 0 0 25px rgba(239, 68, 68, 0.7);
-        }
-
-        .record-circle-inner {
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #ffffff;
-          border: 3px solid rgba(0, 0, 0, 0.3);
         }
 
         .empty-capture-screen {
