@@ -1,0 +1,63 @@
+:root {
+  /* Official TalktoB Brand Palette */
+  --brand-ocean-dark: #002d42;    /* Deepest ocean blue background */
+  --brand-ocean: #005073;         /* Official TalktoB background blue */
+  --brand-ocean-mid: #006088;     /* Mid ocean blue for cards & surfaces */
+  --brand-ocean-light: #0076a5;   /* Surface hover states */
+  
+  --brand-cyan: #00b2e3;          /* Official "to" cyan accent */
+  --brand-cyan-light: #33c4eb;
+  --brand-cyan-glow: rgba(0, 178, 227, 0.35);
+
+  --brand-white: #ffffff;
+  --text-primary: #ffffff;
+  --text-secondary: #b0c9d6;
+  --text-muted: #7496a8;
+
+  /* Card Surfaces & Glassmorphism */
+  --bg-primary: #002638;
+  --bg-surface: #00364d;
+  --bg-card: rgba(0, 70, 100, 0.55);
+  --bg-card-hover: rgba(0, 88, 125, 0.7);
+  --bg-card-solid: #004361;
+
+  /* Accents & Status */
+  --accent-gold: #f59e0b;
+  --accent-gold-light: #fbbf24;
+  --accent-emerald: #10b981;
+  --accent-emerald-light: #34d399;
+  --accent-purple: #8b5cf6;
+  --status-urgent: #ef4444;
+
+  /* Gradients */
+  --brand-gradient: linear-gradient(135deg, #00b2e3 0%, #0076a5 50%, #004361 100%);
+  --brand-gradient-action: linear-gradient(135deg, #00b2e3 0%, #0088b8 100%);
+  --brand-gradient-gold: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+
+  /* Borders & Shadows */
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-brand: rgba(0, 178, 227, 0.3);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-cyan: 0 0 20px rgba(0, 178, 227, 0.3);
+
+  /* Typography */
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Layout & Sizing */
+  --max-content-width: 1200px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Safe Areas */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
