@@ -136,15 +136,33 @@ export const ProfilePage: React.FC = () => {
 
                 <div className="history-item-right">
                   <span className="points-pill-gold">+{contrib.pointsEarned} pts</span>
-                  {contrib.status === 'guardado_localmente' ? (
+                  {contrib.status === 'guardado_localmente' && (
                     <span className="status-offline-tag">
                       <CloudOff size={12} />
                       <span>Guardado localmente</span>
                     </span>
-                  ) : (
+                  )}
+                  {contrib.status === 'procesando' && (
+                    <span className="status-processing-tag">
+                      <Clock size={12} />
+                      <span>En revisión (procesando)</span>
+                    </span>
+                  )}
+                  {contrib.status === 'completado' && (
                     <span className="status-done-tag">
                       <CheckCircle2 size={12} />
-                      <span>3 tomas validadas</span>
+                      <span>Aporte validado</span>
+                    </span>
+                  )}
+                  {contrib.status === 'error' && (
+                    <span className="status-error-tag">
+                      <span>Error en aporte</span>
+                    </span>
+                  )}
+                  {!['guardado_localmente', 'procesando', 'completado', 'error'].includes(contrib.status) && (
+                    <span className="status-processing-tag">
+                      <Clock size={12} />
+                      <span>{contrib.status}</span>
                     </span>
                   )}
                 </div>
@@ -451,6 +469,22 @@ export const ProfilePage: React.FC = () => {
           gap: 4px;
           font-size: 0.74rem;
           color: var(--accent-emerald-light);
+        }
+
+        .status-processing-tag {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.74rem;
+          color: #fbbf24;
+        }
+
+        .status-error-tag {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.74rem;
+          color: #ef4444;
         }
 
         .status-offline-tag {

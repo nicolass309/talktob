@@ -4,7 +4,8 @@ export type LearningOrigin =
   | 'Nativo'
   | 'Escuela' 
   | 'Familia' 
-  | 'Asociación' 
+  | 'Asociación'
+  | 'Asociacion' 
   | 'Cursos' 
   | 'Por mi cuenta' 
   | 'Otro';
@@ -12,7 +13,8 @@ export type LearningOrigin =
 export type RelationWithLSCH = 
   | 'Persona sorda' 
   | 'CODA' 
-  | 'Intérprete' 
+  | 'Intérprete'
+  | 'Interprete' 
   | 'Estudiante' 
   | 'Familiar' 
   | 'Otra';
@@ -27,8 +29,13 @@ export type ContributionStatus =
   | 'guardado_localmente' 
   | 'error';
 
+export type ReviewStatus = 'pendiente' | 'aprobado' | 'rechazado';
+export type WordStatus = 'aprobada' | 'pendiente' | 'rechazada';
+export type UserRole = 'contribuidor' | 'revisor' | 'admin';
+
 export interface Badge {
   id: string;
+  code?: string;
   name: string;
   description: string;
   icon: string;
@@ -37,6 +44,7 @@ export interface Badge {
 
 export interface UserProfile {
   id: string;
+  clerkUserId?: string;
   name: string;
   email: string;
   avatar: string;
@@ -51,6 +59,7 @@ export interface UserProfile {
   level: number;
   badges: Badge[];
   isOnboarded: boolean;
+  role?: UserRole;
 }
 
 export interface SignWord {
@@ -64,6 +73,8 @@ export interface SignWord {
   isPriority: boolean;
   basePoints: number;
   priorityBonus: number;
+  status?: WordStatus;
+  createdByUserId?: string;
 }
 
 export interface TakeData {
@@ -73,19 +84,25 @@ export interface TakeData {
   duration: number;
   recordedAt: string;
   isSimulated?: boolean;
+  storageKey?: string;
+  mimeType?: string;
+  sizeBytes?: number;
 }
 
 export interface Contribution {
   id: string;
+  clientId?: string;
   userId: string;
   wordId: string;
   wordName: string;
   category: string;
   takes: TakeData[];
   status: ContributionStatus;
+  reviewStatus?: ReviewStatus;
   pointsEarned: number;
   isPriority: boolean;
   createdAt: string;
+  submittedAt?: string;
   syncedAt?: string;
   errorMessage?: string;
 }
@@ -132,3 +149,123 @@ export type AppScreen =
   | 'ranking' 
   | 'challenges' 
   | 'history';
+
+// --- Backend API DTO Types ---
+
+export interface ApiErrorResponse {
+  error: {
+    code: string;
+    message: string;
+    details?: any;
+  };
+}
+
+export interface TakeOut {
+  id: string;
+  takeNumber: number;
+  storageKey: string;
+  mimeType: string;
+  sizeBytes: number;
+  durationMs: number;
+  recordedAt?: string;
+  uploadStatus: string;
+  width?: number;
+  height?: number;
+}
+
+export interface UploadPresignedOut {
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  expiresIn: number;
+}
+
+export interface TakeCreateOut {
+  take: TakeOut;
+  upload: UploadPresignedOut;
+}
+
+export interface ContributionOut {
+  id: string;
+  clientId: string;
+  userId: string;
+  wordId: string;
+  status: ContributionStatus;
+  reviewStatus: ReviewStatus;
+  pointsEarned: number;
+  isPriority: boolean;
+  takes: TakeOut[];
+  createdAt?: string;
+  submittedAt?: string;
+  syncedAt?: string;
+  errorMessage?: string;
+}
+
+export interface PaginatedContributionsOut {
+  items: ContributionOut[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface SignWordOut {
+  id: string;
+  word: string;
+  category: string;
+  urgency: 'alta' | 'media' | 'baja';
+  description?: string;
+  isPriority: boolean;
+  basePoints: number;
+  priorityBonus: number;
+  targetVideos: number;
+  currentVideos: number;
+  status: WordStatus;
+  createdByUserId?: string;
+}
+
+export interface PaginatedWordsOut {
+  items: SignWordOut[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface SyncTakeIn {
+  takeNumber: number;
+  storageKey?: string;
+  mimeType: string;
+  sizeBytes: number;
+  durationMs: number;
+  recordedAt?: string;
+  checksum?: string;
+  width?: number;
+  height?: number;
+}
+
+export interface SyncItemIn {
+  clientId: string;
+  wordId: string;
+  takes: SyncTakeIn[];
+}
+
+export interface SyncBatchIn {
+  items: SyncItemIn[];
+}
+
+export interface SyncResultItemOut {
+  clientId: string;
+  status: 'completado' | 'duplicado' | 'error';
+  contributionId?: string;
+  pointsEarned?: number;
+  error?: string;
+}
+
+export interface SyncBatchOut {
+  results: SyncResultItemOut[];
+}
+
+export interface RankingOut {
+  scope: 'weekly' | 'all_time';
+  items: RankingUser[];
+  currentUserRank?: number;
+}

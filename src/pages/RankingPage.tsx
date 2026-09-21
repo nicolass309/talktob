@@ -1,11 +1,37 @@
-import React, { useState } from 'react';
-import { RANKING_WEEKLY, RANKING_ALL_TIME } from '../services/mockDataService';
+import React, { useState, useEffect } from 'react';
 import type { RankingUser } from '../types';
+import { gamificationService } from '../services/gamificationService';
 import { Trophy, Medal, Sparkles, MapPin, Crown } from 'lucide-react';
 
 export const RankingPage: React.FC = () => {
   const [tab, setTab] = useState<'semanal' | 'historico'>('semanal');
-  const rankingList = tab === 'semanal' ? RANKING_WEEKLY : RANKING_ALL_TIME;
+  const [rankingList, setRankingList] = useState<RankingUser[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+
+    const scope = tab === 'semanal' ? 'weekly' : 'all_time';
+    gamificationService.getRanking(scope)
+      .then((res) => {
+        if (active) {
+          setRankingList(res.items || []);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.warn('Error fetching ranking from backend:', err);
+        if (active) {
+          setRankingList([]);
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [tab]);
 
   return (
     <div className="ranking-screen-wrap">
@@ -34,63 +60,77 @@ export const RankingPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Top 3 Podium Cards */}
-      <div className="podium-container">
-        {rankingList.slice(0, 3).map((u: RankingUser, idx: number) => {
-          const podiumOrder = idx === 0 ? 'first' : idx === 1 ? 'second' : 'third';
-          return (
-            <div key={u.name} className={`podium-card glass-card ${podiumOrder}`}>
-              <div className="podium-rank-badge">
-                {idx === 0 && <Crown size={14} className="crown-icon" />}
-                {idx === 1 && <Medal size={14} className="silver-icon" />}
-                {idx === 2 && <Medal size={14} className="bronze-icon" />}
-                <span>#{u.rank}</span>
-              </div>
-              <img src={u.avatar} alt={u.name} className="podium-avatar" />
-              <span className="podium-name">{u.name.split(' ')[0]}</span>
-              <strong className="podium-points">{u.points.toLocaleString('es-CL')} pts</strong>
-              <span className="podium-region">{u.region}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Leaderboard List */}
-      <div className="ranking-list-stack">
-        {rankingList.map((user: RankingUser) => {
-          return (
-            <div
-              key={user.name}
-              className={`ranking-row glass-card ${user.isCurrentUser ? 'current-user-highlight' : ''}`}
-            >
-              <div className="ranking-rank-num">
-                {user.rank === 1 && <Crown size={18} className="gold-icon" />}
-                {user.rank === 2 && <Medal size={18} className="silver-icon" />}
-                {user.rank === 3 && <Medal size={18} className="bronze-icon" />}
-                {user.rank > 3 && <span>#{user.rank}</span>}
-              </div>
-
-              <img src={user.avatar} alt={user.name} className="ranking-row-avatar" />
-
-              <div className="ranking-row-info">
-                <div className="ranking-row-name">
-                  <span>{user.name}</span>
-                  {user.isCurrentUser && <span className="you-chip">Tú</span>}
+      {loading ? (
+        <div className="loading-ranking glass-card">
+          <p>Cargando clasificación real del backend...</p>
+        </div>
+      ) : rankingList.length === 0 ? (
+        <div className="empty-ranking glass-card">
+          <p>Aún no hay usuarios en la tabla de posiciones.</p>
+        </div>
+      ) : (
+        <>
+          {/* Top 3 Podium Cards */}
+          <div className="podium-container">
+            {rankingList.slice(0, 3).map((u: RankingUser, idx: number) => {
+              const podiumOrder = idx === 0 ? 'first' : idx === 1 ? 'second' : 'third';
+              const avatarUrl = u.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
+              return (
+                <div key={u.name + idx} className={`podium-card glass-card ${podiumOrder}`}>
+                  <div className="podium-rank-badge">
+                    {idx === 0 && <Crown size={14} className="crown-icon" />}
+                    {idx === 1 && <Medal size={14} className="silver-icon" />}
+                    {idx === 2 && <Medal size={14} className="bronze-icon" />}
+                    <span>#{u.rank}</span>
+                  </div>
+                  <img src={avatarUrl} alt={u.name} className="podium-avatar" />
+                  <span className="podium-name">{u.name.split(' ')[0]}</span>
+                  <strong className="podium-points">{(u.points || 0).toLocaleString('es-CL')} pts</strong>
+                  <span className="podium-region">{u.region || 'Chile'}</span>
                 </div>
-                <div className="ranking-row-meta">
-                  <MapPin size={11} />
-                  <span>{user.region} • {user.videos} videos</span>
-                </div>
-              </div>
+              );
+            })}
+          </div>
 
-              <div className="ranking-row-points">
-                <Sparkles size={14} className="sparkle-gold" />
-                <span>{user.points.toLocaleString('es-CL')} pts</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+          {/* Leaderboard List */}
+          <div className="ranking-list-stack">
+            {rankingList.map((user: RankingUser, idx: number) => {
+              const avatarUrl = user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
+              return (
+                <div
+                  key={user.name + idx}
+                  className={`ranking-row glass-card ${user.isCurrentUser ? 'current-user-highlight' : ''}`}
+                >
+                  <div className="ranking-rank-num">
+                    {user.rank === 1 && <Crown size={18} className="gold-icon" />}
+                    {user.rank === 2 && <Medal size={18} className="silver-icon" />}
+                    {user.rank === 3 && <Medal size={18} className="bronze-icon" />}
+                    {user.rank > 3 && <span>#{user.rank}</span>}
+                  </div>
+
+                  <img src={avatarUrl} alt={user.name} className="ranking-row-avatar" />
+
+                  <div className="ranking-row-info">
+                    <div className="ranking-row-name">
+                      <span>{user.name}</span>
+                      {user.isCurrentUser && <span className="you-chip">Tú</span>}
+                    </div>
+                    <div className="ranking-row-meta">
+                      <MapPin size={11} />
+                      <span>{user.region || 'Chile'} • {user.videos || 0} videos</span>
+                    </div>
+                  </div>
+
+                  <div className="ranking-row-points">
+                    <Sparkles size={14} className="sparkle-gold" />
+                    <span>{(user.points || 0).toLocaleString('es-CL')} pts</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       <style>{`
         .ranking-screen-wrap {
@@ -163,6 +203,12 @@ export const RankingPage: React.FC = () => {
           background: var(--brand-gradient-action);
           color: #ffffff;
           box-shadow: var(--shadow-cyan);
+        }
+
+        .loading-ranking, .empty-ranking {
+          padding: 32px 20px;
+          text-align: center;
+          color: var(--text-secondary);
         }
 
         .podium-container {
