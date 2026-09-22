@@ -3,13 +3,26 @@ import { createRoot } from 'react-dom/client';
 import { ClerkProvider } from '@clerk/clerk-react';
 import './styles/global.css';
 import App from './App.tsx';
+import { getClerkPublishableKey, isClerkEnabled, setupDevAuth } from './services/authMode.ts';
+import { ClerkTokenBridge } from './components/auth/ClerkTokenBridge.tsx';
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_ZXhhbXBsZS1jbGVyay1rZXktbHNjaC10YWxrdG9iLmNsa2FwcC5kZXYk';
+const rootElement = document.getElementById('root')!;
+const clerkKey = getClerkPublishableKey();
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+if (isClerkEnabled() && clerkKey) {
+  createRoot(rootElement).render(
+    <StrictMode>
+      <ClerkProvider publishableKey={clerkKey}>
+        <ClerkTokenBridge />
+        <App />
+      </ClerkProvider>
+    </StrictMode>,
+  );
+} else {
+  setupDevAuth();
+  createRoot(rootElement).render(
+    <StrictMode>
       <App />
-    </ClerkProvider>
-  </StrictMode>,
-);
+    </StrictMode>,
+  );
+}

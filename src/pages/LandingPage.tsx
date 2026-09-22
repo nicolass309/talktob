@@ -4,7 +4,7 @@ import { TalktoBLogo } from '../components/common/TalktoBLogo';
 import { Video, Users, ChevronRight, HelpCircle, ShieldCheck, Sparkles } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {
-  const { setScreen } = useApp();
+  const { setScreen, communityProgress } = useApp();
   const [showHowItWorks, setShowHowItWorks] = useState(false);
 
   return (
@@ -88,7 +88,7 @@ export const LandingPage: React.FC = () => {
           <div className="impact-stats-row">
             <div className="impact-stat">
               <Users size={16} className="impact-icon" />
-              <span>+1.400 contribuidores</span>
+              <span>+{communityProgress.activeContributors > 0 ? communityProgress.activeContributors.toLocaleString('es-CL') : '0'} contribuidores</span>
             </div>
             <div className="impact-stat">
               <ShieldCheck size={16} className="impact-icon cyan" />

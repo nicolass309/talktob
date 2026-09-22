@@ -3,53 +3,96 @@ import { useApp } from '../context/AppContext';
 import type { ChileanZone, LearningOrigin, RelationWithLSCH, SignWord } from '../types';
 import { CHILEAN_REGIONS } from '../services/mockDataService';
 import { TalktoBLogo } from '../components/common/TalktoBLogo';
-import { useUser, SignInButton } from '@clerk/clerk-react';
-import { Check, ArrowRight, UserCheck, MapPin, BookOpen, Heart, Sparkles, Mail, Lock } from 'lucide-react';
+import { useUser, SignInButton, SignUpButton } from '@clerk/clerk-react';
+import { isClerkEnabled } from '../services/authMode';
+import { Check, ArrowRight, UserCheck, MapPin, BookOpen, Heart, Sparkles, UserPlus } from 'lucide-react';
+
+interface ClerkAuthStep1Props {
+  onContinue: () => void;
+  setName: (name: string) => void;
+  setEmail: (email: string) => void;
+}
+
+const ClerkAuthStep1: React.FC<ClerkAuthStep1Props> = ({ onContinue, setName, setEmail }) => {
+  const { user, isSignedIn } = useUser();
+
+  useEffect(() => {
+    if (isSignedIn && user) {
+      setName(user.fullName || user.firstName || 'Contribuidor');
+      setEmail(user.primaryEmailAddress?.emailAddress || 'usuario@talktob.cl');
+    }
+  }, [isSignedIn, user, setName, setEmail]);
+
+  return (
+    <div className="onboarding-step-card glass-card">
+      <div className="step-icon-wrap">
+        <UserCheck size={28} />
+      </div>
+      <h1 className="step-title">Crear cuenta o ingresar</h1>
+      <p className="step-subtitle">Autentícate con Clerk para guardar tus contribuciones en el dataset real.</p>
+
+      <div className="auth-btn-stack">
+        {isSignedIn ? (
+          <button className="btn-action-primary submit-auth-btn" onClick={onContinue}>
+            <span>Continuar como {user?.firstName || 'Contribuidor'}</span>
+            <ArrowRight size={18} />
+          </button>
+        ) : (
+          <>
+            {/* Sign In via Clerk */}
+            <SignInButton mode="modal">
+              <button className="btn-action-primary google-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                </svg>
+                <span>Iniciar sesión con Clerk</span>
+              </button>
+            </SignInButton>
+
+            {/* Sign Up via Clerk */}
+            <SignUpButton mode="modal">
+              <button className="btn-action-secondary">
+                <UserPlus size={18} />
+                <span>Crear cuenta en Clerk</span>
+              </button>
+            </SignUpButton>
+
+            <button className="btn-action-subtle" onClick={onContinue}>
+              <span>Continuar como invitado / desarrollo local</span>
+              <ArrowRight size={16} />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export const OnboardingPage: React.FC = () => {
   const { completeOnboarding, setScreen, words, startContributionForWord } = useApp();
-  const { user, isSignedIn } = useUser();
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
-  // Quick login state (Email + Password without complex restrictions)
-  const [emailInput, setEmailInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
-  const [showEmailForm, setShowEmailForm] = useState(false);
-
   // Onboarding Form states
-  const [name, setName] = useState(user?.fullName || 'Contribuidor');
-  const [email, setEmail] = useState(user?.primaryEmailAddress?.emailAddress || 'usuario@talktob.cl');
+  const [name, setName] = useState('Contribuidor');
+  const [email, setEmail] = useState('usuario@talktob.cl');
   const [regionZone, setRegionZone] = useState<ChileanZone>('Centro');
   const [specificRegion, setSpecificRegion] = useState('Metropolitana de Santiago');
   const [learningOrigin, setLearningOrigin] = useState<LearningOrigin>('Nativo');
   const [relationWithLSCH, setRelationWithLSCH] = useState<RelationWithLSCH>('Persona sorda');
 
-  // Auto advance step if signed in with Clerk Google OAuth
-  useEffect(() => {
-    if (isSignedIn && user && step === 1) {
-      setName(user.fullName || user.firstName || 'Contribuidor');
-      setEmail(user.primaryEmailAddress?.emailAddress || 'usuario@talktob.cl');
-      setStep(2);
-    }
-  }, [isSignedIn, user, step]);
-
-  const handleQuickEmailLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailInput.trim()) return;
-    setEmail(emailInput.trim());
-    setName(emailInput.split('@')[0] || 'Contribuidor');
-    setStep(2);
-  };
-
-  const handleFinishOnboarding = () => {
-    completeOnboarding({
-      name: user?.fullName || name,
-      email: user?.primaryEmailAddress?.emailAddress || email,
-      avatar: user?.imageUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+  const handleFinishOnboarding = async () => {
+    await completeOnboarding({
+      name,
+      email,
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
       regionZone,
       specificRegion,
       learningOrigin,
-      relationWithLSCH
+      relationWithLSCH,
+      isOnboarded: true
     });
 
     const priority = words.find((w: SignWord) => w.isPriority) || words[0];
@@ -80,72 +123,30 @@ export const OnboardingPage: React.FC = () => {
         <span className="step-count">Paso {step} de 5</span>
       </div>
 
-      {/* STEP 1: LOGIN WITH CLERK GOOGLE OAUTH OR UNRESTRICTED EMAIL & PASSWORD */}
+      {/* STEP 1: AUTHENTICATION */}
       {step === 1 && (
-        <div className="onboarding-step-card glass-card">
-          <div className="step-icon-wrap">
-            <UserCheck size={28} />
-          </div>
-          <h1 className="step-title">Crear cuenta o ingresar</h1>
-          <p className="step-subtitle">Elige tu método de ingreso preferido para comenzar a aportar.</p>
+        isClerkEnabled() ? (
+          <ClerkAuthStep1
+            onContinue={() => setStep(2)}
+            setName={setName}
+            setEmail={setEmail}
+          />
+        ) : (
+          <div className="onboarding-step-card glass-card">
+            <div className="step-icon-wrap">
+              <UserCheck size={28} />
+            </div>
+            <h1 className="step-title">Modo Desarrollo</h1>
+            <p className="step-subtitle">Autenticado con token local de desarrollo.</p>
 
-          <div className="auth-btn-stack">
-            {/* Google OAuth via Clerk */}
-            <SignInButton mode="modal">
-              <button className="btn-action-primary google-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                </svg>
-                <span>Ingresar con Google (Clerk)</span>
+            <div className="auth-btn-stack">
+              <button className="btn-action-primary submit-auth-btn" onClick={() => setStep(2)}>
+                <span>Continuar a la encuesta de perfil</span>
+                <ArrowRight size={18} />
               </button>
-            </SignInButton>
-
-            {!showEmailForm ? (
-              <button
-                className="btn-action-secondary"
-                onClick={() => setShowEmailForm(true)}
-              >
-                <Mail size={18} />
-                <span>Ingresar con correo y contraseña</span>
-              </button>
-            ) : (
-              /* Unrestricted Email & Password Form */
-              <form className="quick-login-form" onSubmit={handleQuickEmailLogin}>
-                <div className="input-group">
-                  <Mail size={16} className="input-icon" />
-                  <input
-                    type="email"
-                    required
-                    placeholder="Tu correo electrónico"
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                    className="auth-input"
-                  />
-                </div>
-
-                <div className="input-group">
-                  <Lock size={16} className="input-icon" />
-                  <input
-                    type="password"
-                    required
-                    placeholder="Tu contraseña (sin restricciones)"
-                    value={passwordInput}
-                    onChange={(e) => setPasswordInput(e.target.value)}
-                    className="auth-input"
-                  />
-                </div>
-
-                <button type="submit" className="btn-action-primary submit-auth-btn">
-                  <span>Ingresar y continuar</span>
-                  <ArrowRight size={18} />
-                </button>
-              </form>
-            )}
+            </div>
           </div>
-        </div>
+        )
       )}
 
       {/* STEP 2: REGION */}
@@ -192,7 +193,7 @@ export const OnboardingPage: React.FC = () => {
         </div>
       )}
 
-      {/* STEP 3: LEARNING ORIGIN (Includes 'Nativo') */}
+      {/* STEP 3: LEARNING ORIGIN */}
       {step === 3 && (
         <div className="onboarding-step-card glass-card">
           <div className="step-icon-wrap">
@@ -372,45 +373,6 @@ export const OnboardingPage: React.FC = () => {
           background: #ffffff;
           color: #0f172a;
           border: 1px solid #e2e8f0;
-        }
-
-        .quick-login-form {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          width: 100%;
-          margin-top: 4px;
-        }
-
-        .input-group {
-          position: relative;
-          width: 100%;
-        }
-
-        .input-icon {
-          position: absolute;
-          left: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--text-muted);
-        }
-
-        .auth-input {
-          width: 100%;
-          min-height: 48px;
-          padding: 10px 14px 10px 40px;
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid var(--border-subtle);
-          border-radius: var(--radius-md);
-          color: #ffffff;
-          font-family: var(--font-body);
-          font-size: 0.92rem;
-          outline: none;
-        }
-
-        .auth-input:focus {
-          border-color: var(--brand-cyan);
-          box-shadow: 0 0 12px rgba(0, 178, 227, 0.25);
         }
 
         .submit-auth-btn {

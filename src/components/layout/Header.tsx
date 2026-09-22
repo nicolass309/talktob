@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { TalktoBLogo } from '../common/TalktoBLogo';
 import type { AppScreen, SignWord } from '../../types';
 import { SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/clerk-react';
+import { isClerkEnabled } from '../../services/authMode';
 import { Wifi, WifiOff, RefreshCw, Sparkles, Home, Target, Trophy, User, Video, LogIn } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -94,19 +95,28 @@ export const Header: React.FC = () => {
             <span className="points-label">pts</span>
           </div>
 
-          {/* Clerk Auth Integration */}
+          {/* Clerk / Dev Auth Integration */}
           <div className="clerk-user-avatar-wrap">
-            <SignedIn>
-              <UserButton afterSignOutUrl="/" />
-            </SignedIn>
-            <SignedOut>
-              <SignInButton mode="modal">
-                <button className="clerk-login-btn" title="Ingresar con Google">
-                  <LogIn size={15} />
-                  <span>Ingresar</span>
-                </button>
-              </SignInButton>
-            </SignedOut>
+            {isClerkEnabled() ? (
+              <>
+                <SignedIn>
+                  <UserButton afterSignOutUrl="/" />
+                </SignedIn>
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <button className="clerk-login-btn" title="Ingresar con Google">
+                      <LogIn size={15} />
+                      <span>Ingresar</span>
+                    </button>
+                  </SignInButton>
+                </SignedOut>
+              </>
+            ) : (
+              <div className="dev-auth-badge" title="Modo desarrollo activo (AUTH_DEV_MODE=true)">
+                <User size={14} />
+                <span>Modo Dev</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -295,6 +305,19 @@ export const Header: React.FC = () => {
           font-size: 0.78rem;
           font-weight: 700;
           cursor: pointer;
+        }
+
+        .dev-auth-badge {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(0, 178, 227, 0.15);
+          border: 1px solid rgba(0, 178, 227, 0.3);
+          color: var(--brand-cyan);
+          padding: 6px 12px;
+          border-radius: var(--radius-full);
+          font-size: 0.78rem;
+          font-weight: 700;
         }
       `}</style>
     </header>
